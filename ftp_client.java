@@ -1,9 +1,11 @@
+package ftp;
+
 import java.awt.Checkbox;
-import java.io.*; 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 
-public class ftp_clientDC {
+public class ftp_client {
     private static InetAddress host;
     private static final int PORT = 1236;
 
@@ -12,7 +14,7 @@ public class ftp_clientDC {
         Socket server = null;
         String message, command, response, serverName = "";
         int serverPort;
-        
+
         Scanner serverInput = null;
         PrintWriter serverOutput = null;
 
@@ -26,12 +28,12 @@ public class ftp_clientDC {
             {
                 /* display normal prompt preceeding every user entry */
                 System.out.print("Enter command ('QUIT' to exit): ");
-                
+
                 /* get user input and tokenize to get command */
                 message =  userEntry.nextLine();
                 StringTokenizer tokens = new StringTokenizer(message);
                 command = tokens.nextToken();
-                
+
                 if(command.equals("CONNECT"))
                 {
                     /* check that no connection already exists with a server */
@@ -40,7 +42,7 @@ public class ftp_clientDC {
                         System.out.println("A connection with server " + serverName + " has already been established.");
                         continue;
                     }
-                    
+
                     /*check for correct parameters
                      * must be in the form CONNECT servername/IP server port */
                     serverName = tokens.nextToken();
@@ -51,11 +53,11 @@ public class ftp_clientDC {
                     /* get output stream from server to send request */
                     serverInput = new Scanner(server.getInputStream());
                     serverOutput = new PrintWriter(server.getOutputStream(),true);
-                    
+
                     System.out.println("Connection with " + serverName + " has been established.");
                     continue;  //repeat while loop
                 }
-                
+
                 if(command.equals("LIST"))
                 {
                     /* check that a connection with a server exists */
@@ -73,33 +75,90 @@ public class ftp_clientDC {
 
                     /* receive connection */
                     Socket dataSocket = welcomeSocket.accept();
-                    
+
                     /* get input stream to read response to the data socket */
                     Scanner dataInput = new Scanner(dataSocket.getInputStream());
-                    
+
                     /* get and print response */
                     response = dataInput.nextLine();
                     System.out.println(response);
-                    
+
                     /* close connection and resources */
                     dataInput.close();
                     dataSocket.close();
                     welcomeSocket.close();
                 }
-                
+
+                /*
+                  RETR method written by Chris Schertenlieb
+                  Got some help on the output stream stuff from tutorialspoint
+                  and also from here: http://www.codebytes.in/2014/11/file-transfer-using-tcp-java.html
+                */
                 if(command.equals("RETR"))
                 {
+                  // first check that the server is not null, code copied from Dave
+                  if (server == null)
+                  {
+                      System.out.println("A connection with a server has not been established.");
+                      continue;
+                  }
+                  // get the token for the name of the file we're looking for
+                  String targetFile = tokens.nextToken();
+
+                  // send our command to the server, with the file we want and our welcomeSocket port number
+                  serverOutput.println("RETR " + targetFile + PORT);
+
+                  // establish our sockets
+                  ServerSocket welcomeSocket = new ServerSocket(PORT);
+                  Socket dataSocket = welcomeSocket.accept();
+
+                  // byte array buffer thingy for our file
+                  byte[] fileContents = new byte[10000];
+
+                  // set up a fileOutputStream and set the path to our current directory
+                  // plus the file we want
+                  // also we nest it inside a buffer for efficiency and all that jazz
+                  FileOutputStream fileStream = new FileOutputStream("./" + targetFile);
+                  BufferedOutputStream buffStream = new BufferedOutputStream(fileStream);
+
+                  // our inputStream for getting data from the server
+                  InputStream fileIn = dataSocket.getInputStream();
+
+                  // this will help us keep track of completion
+                  int bytesRead = 0;
+
+                  // fileIn.read(fileContents) is saying: read bytes from the
+                  // fileInputStream and store them in the byte array fileContents.
+                  // https://www.tutorialspoint.com/java/io/inputstream_read_byte.htm
+                  // fileIn.read(fileContents) returns the number of bytes it read (see doc)
+                  // and we store that number in bytesRead and check that it is not -1, as
+                  // the read method will return -1 if the end of the stream is reached (see doc)
+                  while((bytesRead=fileIn.read(fileContents)) != -1)
+                  {
+                    // we write all these bytes to our OutputStream whose destination is our current directory
+                    buffStream.write(fileContents, 0, bytesRead);
+                  }
+                  
+                  // we flush our output stream to free up our memory
+                  buffStream.flush();
+                  fileStream.close();
+                  buffStream.close();
+                  dataSocket.close();
+                  welcomeSocket.close();
+                  
+                  System.out.println("File Saved!");
+
                 }
-                
+
                 if(command.equals("STOR"))
                 {
                 }
-                
+
             }while (!command.equals("QUIT"));
-            
+
             /* tell the server that you are quitting */
             serverOutput.println("QUIT");
-            
+
             /* close connection and resources */
             server.close();
             userEntry.close();
@@ -115,7 +174,8 @@ public class ftp_clientDC {
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-        
+
     }
-    
+
 }
+
