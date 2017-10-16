@@ -1,4 +1,3 @@
-package project1;
 import java.io.*;
 import java.net.*;
 import java.util.*;
@@ -132,18 +131,22 @@ class ClientHandler extends Thread
                 /* will be of the form RETR <filename>  */
                 /* send <filename> to client address at <port> */
 
+
                 // get the file name passed by the client
                 String fileName = tokens.nextToken();
 
                 // Check if the file lives with us, if it does we get a file object, if not, we print a message and continue
+
                 System.out.println("Checking for File...");
                 File file = new File(fileName);
                 if(!file.exists()) {
                     // File was not found. Send error message, repeat while loop */
+
                     System.out.println(fileName + " could not be found. Please specify a different file.");
                     continue;
                 }
                 System.out.println("File found!");
+
 
 
                 // get the data port for the client
@@ -155,7 +158,9 @@ class ClientHandler extends Thread
                     System.out.println("Invalid port number. Command must be in the form RETR (string)filename (int)portNumber");
                     continue;
                 }
+
                 System.out.println("Data Port Found!");
+
 
 
                 // give this pupper a go
@@ -163,6 +168,7 @@ class ClientHandler extends Thread
                 try {
                 	// get our data connection going
                 	Socket dataSocket = new Socket(client.getInetAddress(), dataConnPort);
+
 
                     // initialize our byte array at the size of our file
                     byte [] byteArray = new byte [(int)file.length()];
@@ -185,6 +191,7 @@ class ClientHandler extends Thread
                     bis.close();
                     dataSocket.close();
 
+
                     System.out.println("Done!");
                 } catch (FileNotFoundException e) {
                     System.out.println("File could not be found!");
@@ -192,11 +199,14 @@ class ClientHandler extends Thread
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
+
                 }
+
             }
 
             if(command.equals("STOR"))
             {
+
             	// get the file name passed by the client
             	String fileName = tokens.nextToken();
 
